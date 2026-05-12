@@ -459,7 +459,7 @@
         <label class="drop-zone" id="dropZone">
           <span class="drop-zone-title">Solte fotos aqui</span>
           <span class="drop-zone-hint">ou clique para selecionar · JPG, PNG · até 5 MB cada</span>
-          <input type="file" id="photoInput" accept="image/*" multiple>
+          <input type="file" id="photoInput" name="foto" accept="image/*" multiple>
         </label>
         <div class="photo-grid" id="photoGrid"></div>
       </div>
@@ -716,9 +716,82 @@ const quizForm=document.getElementById('quizForm');
 const submitFrame=document.getElementById('submitFrame');
 const submitBtn=document.getElementById('submitBtn');
 
+// Mapa nome técnico → pergunta legível (com prefixo numérico = ordem alfabética = ordem do form)
+const FIELD_LABELS={
+  // 01 Identificação
+  nome:'01 · Nome completo',
+  apelido:'01 · Apelido',
+  // 02 Categoria + cargo
+  categoria:'02 · Categoria profissional',
+  cargo:'02 · Cargo · descrição curta',
+  // 03 Redes sociais
+  instagram:'03 · Instagram',
+  linkedin:'03 · LinkedIn',
+  site:'03 · Site profissional',
+  // 04 Registros
+  tipo_registro:'04 · Tipo de registro',
+  num_registro:'04 · Número do registro',
+  rqe:'04 · RQE · Registro de Qualificação de Especialista',
+  // 05 Formação
+  graduacao:'05 · Graduação principal',
+  conhecimentos:'05 · Conhecimentos e formação complementar',
+  // 06 Mini-bio
+  bio:'06 · Mini-bio',
+  // 07 Funções
+  funcoes:'07 · Descrição das funções',
+  // 09 Jornadas
+  j1:'09 · Jornada 01 · Longevidade e Wellbeing',
+  j2:'09 · Jornada 02 · Hormonal e Climatério',
+  j3:'09 · Jornada 03 · Performance e Auto Desempenho',
+  j4:'09 · Jornada 04 · Recuperação Integral',
+  j5:'09 · Jornada 05 · Saúde Mental Integrada',
+  j6:'09 · Jornada 06 · Estética Regenerativa',
+  j7:'09 · Jornada 07 · Metabólica e Emagrecimento',
+  // 10 Operacional
+  local:'10 · Local de atendimento',
+  salas:'10 · Salas utilizadas',
+  dias:'10 · Dias da semana',
+  janela:'10 · Janela de horário',
+  duracao:'10 · Duração padrão da consulta',
+  // 12 Foto
+  foto_status:'12 · Status da foto profissional',
+  foto:'12 · Foto(s) profissional(is)',
+  // 13 Confirmação
+  quem:'13 · Preenchido por',
+  data_envio:'13 · Data de envio'
+};
+
+// Padrões dinâmicos · novos serviços/objeções aparecem com sufixo numérico
+function relabelDynamic(name){
+  let m;
+  if((m=name.match(/^svc_n_(\d+)$/)))return `08 · Serviço ${m[1]} · Nome`;
+  if((m=name.match(/^svc_d_(\d+)$/)))return `08 · Serviço ${m[1]} · Descrição`;
+  if((m=name.match(/^obj_q_(\d+)$/)))return `11 · Objeção ${m[1]} · Pergunta frequente`;
+  if((m=name.match(/^obj_a_(\d+)$/)))return `11 · Objeção ${m[1]} · Resposta sugerida`;
+  return null;
+}
+
+function relabelAllFields(){
+  quizForm.querySelectorAll('[name]').forEach(el=>{
+    const oldName=el.name;
+    if(!oldName||oldName.startsWith('_'))return; // pula FormSubmit config
+    const newName=FIELD_LABELS[oldName]||relabelDynamic(oldName);
+    if(newName)el.name=newName;
+  });
+}
+
+function updateSubject(){
+  const nomeEl=quizForm.querySelector('input[name="nome"], input[name^="01 · Nome"]');
+  const nome=(nomeEl?.value||'sem nome').trim();
+  const subjectEl=quizForm.querySelector('input[name="_subject"]');
+  if(subjectEl)subjectEl.value=`Novo cadastro · ${nome} · Catálogo ALL LIFE INSTITUTE`;
+}
+
 quizForm.addEventListener('submit',(e)=>{
   // Não usar preventDefault · queremos a submissão nativa do form pro iframe
   prepareLocalBackup();
+  updateSubject();     // título do email com o nome do profissional
+  relabelAllFields();  // campos viram perguntas legíveis no corpo do email
   submitting=true;
   if(submitBtn){
     submitBtn.disabled=true;
