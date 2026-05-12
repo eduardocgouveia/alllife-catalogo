@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ALL LIFE INSTITUTE · Linhas · Anexo do Catálogo</title>
+<style>
+  @font-face{font-family:'ABC Monument Grotesk';src:url('./assets/fonts/MonumentGrotesk-Heavy.otf') format('opentype');font-weight:800;font-style:normal;font-display:swap}
+  @font-face{font-family:'ABC Simon Mono';src:url('./assets/fonts/SimonMono-Light.woff2') format('woff2'),url('./assets/fonts/SimonMono-Light.woff') format('woff');font-weight:300;font-style:normal;font-display:swap}
+  @font-face{font-family:'ABC Simon Mono';src:url('./assets/fonts/SimonMono-Medium.woff2') format('woff2'),url('./assets/fonts/SimonMono-Medium.woff') format('woff');font-weight:500;font-style:normal;font-display:swap}
+  :root{
+    --white-paper:#F8F7F3;--black:#1F1F1F;--text:#333333;--text-dim:#525252;--text-faint:#6B6B6B;
+    --dark-green:#585C3B;--nature-green:#899064;--terracota:#B46A55;--brown:#BF9474;
+    --accent-strong:#8C4E3F;
+    --f-display:'ABC Monument Grotesk',Helvetica,Arial,sans-serif;
+    --f-body:'Helvetica Neue',Helvetica,Arial,sans-serif;
+    --f-mono:'ABC Simon Mono','SF Mono',ui-monospace,Menlo,Courier,monospace;
+    --ease-out:cubic-bezier(.16,1,.3,1);
+    --pad-x:clamp(28px,7vw,140px);
+  }
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+  html{scroll-behavior:smooth}
+  body{font-family:var(--f-body);font-weight:400;background:var(--white-paper);color:var(--text);font-size:16px;line-height:1.55;-webkit-font-smoothing:antialiased;min-height:100dvh;overflow-x:hidden}
+
+  /* ─── topo ─── */
+  header.top{padding:20px var(--pad-x);display:flex;justify-content:space-between;align-items:center;gap:24px;border-bottom:1.5px solid var(--text);position:sticky;top:0;background:rgba(248,247,243,.94);backdrop-filter:blur(8px);z-index:20}
+  header.top img{height:48px;display:block}
+  header.top .meta{font-family:var(--f-mono);font-size:11px;font-weight:500;letter-spacing:.22em;text-transform:uppercase;color:var(--text-faint)}
+  header.top a.back{font-family:var(--f-mono);font-size:11px;font-weight:600;letter-spacing:.18em;text-transform:uppercase;color:var(--accent-strong);text-decoration:none;padding:10px 16px;border:1.5px solid var(--accent-strong);transition:background .2s,color .2s}
+  header.top a.back:hover{background:var(--accent-strong);color:var(--white-paper)}
+
+  /* ─── intro ─── */
+  .intro{padding:clamp(80px,12vw,160px) var(--pad-x) clamp(60px,8vw,120px);max-width:1280px;margin:0 auto;display:flex;flex-direction:column;gap:24px;border-bottom:1.5px solid var(--text)}
+  .intro .label{font-family:var(--f-mono);font-size:13px;font-weight:600;letter-spacing:.24em;text-transform:uppercase;color:var(--accent-strong)}
+  .intro h1{font-family:var(--f-display);font-weight:800;font-size:clamp(56px,9vw,140px);line-height:.95;letter-spacing:-.03em;color:var(--text);max-width:16ch}
+  .intro p.lede{font-family:var(--f-body);font-size:clamp(17px,1.5vw,21px);line-height:1.6;color:var(--text-dim);max-width:60ch;margin-top:16px}
+
+  /* ─── body ─── */
+  main{padding:clamp(60px,8vw,120px) var(--pad-x) clamp(120px,16vw,200px);max-width:1480px;margin:0 auto;display:flex;flex-direction:column;gap:clamp(80px,10vw,140px)}
+
+  /* ─── secção ─── */
+  .linha{display:flex;flex-direction:column;gap:clamp(32px,4vw,56px)}
+  .linha-head{display:grid;grid-template-columns:auto 1fr;gap:clamp(24px,4vw,56px);align-items:end;padding-bottom:24px;border-bottom:1.5px solid var(--text)}
+  @media (max-width:780px){.linha-head{grid-template-columns:1fr;gap:16px}}
+  .linha-eye{font-family:var(--f-mono);font-size:12px;font-weight:600;letter-spacing:.24em;text-transform:uppercase;color:var(--accent-strong)}
+  .linha-name{font-family:var(--f-display);font-weight:800;font-size:clamp(36px,5vw,72px);line-height:.98;letter-spacing:-.028em;color:var(--text);margin-top:6px}
+  .linha-desc{font-family:var(--f-body);font-size:clamp(15px,1.3vw,18px);line-height:1.6;color:var(--text-dim);max-width:48ch}
+
+  /* ─── grade de rótulos · réplica do DS ─── */
+  .labels-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:clamp(24px,3vw,40px)}
+  @media (max-width:780px){.labels-grid{grid-template-columns:1fr;gap:32px}}
+  .label-frame{display:flex;flex-direction:column;gap:18px}
+  .label-card{aspect-ratio:9/15;width:100%;position:relative;padding:clamp(24px,3vw,40px);display:flex;flex-direction:column;color:var(--text);overflow:hidden;opacity:0;transform:translateY(40px);transition:opacity 1.2s var(--ease-out),transform 1.4s var(--ease-out)}
+  .label-card.is-on{opacity:1;transform:translateY(0)}
+  .label-card.green{background:var(--nature-green)}
+  .label-card.terracota{background:var(--terracota)}
+  .label-card.brown{background:var(--brown)}
+  .label-card.dark-green{background:var(--dark-green);color:var(--white-paper)}
+  .label-card.dark-green .label-line{background:var(--white-paper)}
+  .label-card.dark-green .label-foot a,.label-card.dark-green .label-foot span{color:var(--white-paper)}
+
+  .label-brand{display:block}
+  .label-brand img{height:clamp(20px,1.8vw,28px);width:auto;display:block;object-fit:contain}
+
+  .label-line{width:100%;height:1.5px;background:var(--text);margin:clamp(14px,2vw,22px) 0}
+
+  .label-name{font-family:var(--f-display);font-weight:800;font-size:clamp(36px,5.2vw,72px);line-height:.92;letter-spacing:-.028em;color:inherit;text-transform:none}
+
+  .label-desc{font-family:var(--f-mono);font-size:clamp(12px,1.1vw,15px);font-weight:300;line-height:1.55;color:inherit;max-width:36ch;margin-top:6px}
+
+  .label-foot{margin-top:auto;display:flex;justify-content:space-between;align-items:center;gap:16px;font-family:var(--f-mono);font-size:clamp(11px,1vw,13px);font-weight:300;color:inherit}
+  .label-foot a{color:inherit;text-decoration:none}
+
+  .label-spec{display:flex;flex-direction:column;gap:8px;padding:14px 16px;background:var(--white-paper);border:1px solid var(--text)}
+  .label-spec .spec-eye{font-family:var(--f-mono);font-size:10px;font-weight:600;letter-spacing:.22em;text-transform:uppercase;color:var(--accent-strong)}
+  .label-spec p{font-family:var(--f-body);font-size:13.5px;line-height:1.5;color:var(--text-dim)}
+  .label-spec p b{color:var(--text);font-weight:500}
+
+  /* ─── linha em construção ─── */
+  .draft-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:0;border-top:1px solid var(--text);border-left:1px solid var(--text)}
+  @media (max-width:960px){.draft-grid{grid-template-columns:repeat(2,1fr)}}
+  @media (max-width:560px){.draft-grid{grid-template-columns:1fr}}
+  .draft-card{padding:clamp(24px,3vw,40px);background:var(--white-paper);border-right:1px solid var(--text);border-bottom:1px solid var(--text);display:flex;flex-direction:column;gap:16px;min-height:240px;border-top:3px solid var(--brown);position:relative}
+  .draft-card.alt-tone{border-top-color:var(--dark-green)}
+  .draft-card.alt-three{border-top-color:var(--terracota)}
+  .draft-eye{font-family:var(--f-mono);font-size:10.5px;font-weight:600;letter-spacing:.22em;text-transform:uppercase;color:var(--text-faint)}
+  .draft-name{font-family:var(--f-display);font-weight:800;font-size:clamp(22px,2.4vw,32px);line-height:1.04;letter-spacing:-.02em;color:var(--text)}
+  .draft-desc{font-family:var(--f-body);font-size:14px;line-height:1.55;color:var(--text-dim);max-width:42ch}
+  .draft-tag{margin-top:auto;font-family:var(--f-mono);font-size:10px;font-weight:600;letter-spacing:.22em;text-transform:uppercase;color:var(--brown);padding:6px 10px;border:1px solid var(--brown);align-self:flex-start}
+
+  /* ─── seção de variantes · paleta DS ─── */
+  .palette-grid{display:grid;grid-template-columns:repeat(6,1fr);margin-top:24px;border:1px solid var(--text)}
+  @media (max-width:780px){.palette-grid{grid-template-columns:repeat(3,1fr)}}
+  @media (max-width:480px){.palette-grid{grid-template-columns:repeat(2,1fr)}}
+  .swatch{aspect-ratio:1;padding:14px;display:flex;flex-direction:column;justify-content:space-between;font-family:var(--f-mono);font-size:9.5px;font-weight:500;letter-spacing:.18em;text-transform:uppercase;border-right:1px solid rgba(51,51,51,.16);border-bottom:1px solid rgba(51,51,51,.16)}
+  .swatch:last-child{border-right:none}
+  .swatch.white{background:var(--white-paper);color:var(--text)}
+  .swatch.black{background:var(--black);color:var(--white-paper)}
+  .swatch.dark-green{background:var(--dark-green);color:var(--white-paper)}
+  .swatch.nature-green{background:var(--nature-green);color:var(--text)}
+  .swatch.terracota{background:var(--terracota);color:var(--text)}
+  .swatch.brown{background:var(--brown);color:var(--text)}
+  .swatch .sw-hex{align-self:flex-end;font-weight:600}
+
+  /* ─── footer ─── */
+  footer{padding:48px var(--pad-x);border-top:1.5px solid var(--text);display:flex;justify-content:space-between;align-items:center;gap:24px;flex-wrap:wrap}
+  footer span{font-family:var(--f-mono);font-size:11px;font-weight:500;letter-spacing:.22em;text-transform:uppercase;color:var(--text-faint)}
+  footer a{font-family:var(--f-mono);font-size:11px;font-weight:600;letter-spacing:.18em;text-transform:uppercase;color:var(--accent-strong);text-decoration:none}
+  footer a:hover{color:var(--text)}
+
+  @media (prefers-reduced-motion: reduce){
+    .label-card{opacity:1!important;transform:none!important}
+  }
+</style>
+</head>
+<body>
+
+<header class="top">
+  <img src="./assets/logos/oficial-horizontal.png" alt="ALL LIFE INSTITUTE">
+  <span class="meta">Anexo · Linhas do Instituto</span>
+  <a class="back" href="./CATALOGO-DE-PRODUTOS-E-SERVICOS.html">← Catálogo</a>
+</header>
+
+<section class="intro">
+  <span class="label">Anexo · Linhas do Instituto · v0.1</span>
+  <h1>As linhas que o Instituto carrega no corpo.</h1>
+  <p class="lede">Documento anexo ao Catálogo. Reúne as linhas de produto do ALL LIFE INSTITUTE · o que já existe, o que está em construção e os padrões visuais aplicados a cada peça. Toda linha herda o sistema visual oficial · paleta, tipografia, gramática de rótulos. Atualiza conforme novas linhas amadurecem.</p>
+</section>
+
+<main>
+
+  <!-- ─── LINHA APOTECA · BANHOS ─── -->
+  <section class="linha">
+    <div class="linha-head">
+      <div>
+        <span class="linha-eye">Linha 01 · em produção</span>
+        <h2 class="linha-name">Apoteca · Banhos.</h2>
+      </div>
+      <p class="linha-desc">Banhos terapêuticos curados a partir das ervas de Mãe Lu. Aplicação dentro das vivências, em kits pós-consulta e na ALL LIFE Store. Cada rótulo segue o sistema visual oficial · paleta da terra, tipografia heavy, descrição em mono.</p>
+    </div>
+
+    <div class="labels-grid">
+
+      <article class="label-frame">
+        <div class="label-card green" data-reveal>
+          <span class="label-brand"><img src="./assets/logos/horizontal-preto.png" alt="ALL LIFE INSTITUTE"></span>
+          <span class="label-line"></span>
+          <h3 class="label-name">Banho de Alfazema</h3>
+          <span class="label-line"></span>
+          <p class="label-desc">Usado para purificação, limpeza espiritual e tranquilidade.</p>
+          <div class="label-foot">
+            <span>250 ml · 8.45 oz</span>
+            <a href="#">www.alllifeinstitute.com.br</a>
+          </div>
+        </div>
+        <div class="label-spec">
+          <span class="spec-eye">Spec · variação verde</span>
+          <p><b>Fundo</b> · Nature Green #899064. <b>Tipografia</b> · Monument Grotesk Heavy + Simon Mono Light. <b>Função</b> · linha calmante, sono, encerramento de dia. <b>Erva</b> · alfazema (lavanda).</p>
+        </div>
+      </article>
+
+      <article class="label-frame">
+        <div class="label-card terracota" data-reveal>
+          <span class="label-brand"><img src="./assets/logos/horizontal-preto.png" alt="ALL LIFE INSTITUTE"></span>
+          <span class="label-line"></span>
+          <h3 class="label-name">Banho de Alfazema</h3>
+          <span class="label-line"></span>
+          <p class="label-desc">Usado para purificação, limpeza espiritual e tranquilidade.</p>
+          <div class="label-foot">
+            <span>250 ml · 8.45 oz</span>
+            <a href="#">www.alllifeinstitute.com.br</a>
+          </div>
+        </div>
+        <div class="label-spec">
+          <span class="spec-eye">Spec · variação terracota</span>
+          <p><b>Fundo</b> · Terracota #B46A55. <b>Tipografia</b> · Monument Grotesk Heavy + Simon Mono Light. <b>Função</b> · linha quente, aquecimento, ritual de partida. <b>Erva</b> · alfazema (lavanda).</p>
+        </div>
+      </article>
+
+      <article class="label-frame">
+        <div class="label-card brown" data-reveal>
+          <span class="label-brand"><img src="./assets/logos/horizontal-preto.png" alt="ALL LIFE INSTITUTE"></span>
+          <span class="label-line"></span>
+          <h3 class="label-name">Banho de Camomila</h3>
+          <span class="label-line"></span>
+          <p class="label-desc">Suaviza, recolhe e abraça. Indicado para fim de ciclo e descanso profundo.</p>
+          <div class="label-foot">
+            <span>250 ml · 8.45 oz</span>
+            <a href="#">www.alllifeinstitute.com.br</a>
+          </div>
+        </div>
+        <div class="label-spec">
+          <span class="spec-eye">Spec · proposta brown</span>
+          <p><b>Fundo</b> · Brown #BF9474. <b>Status</b> · arte a confirmar com Mari + Bruno. <b>Erva</b> · camomila. <b>Aplicação prevista</b> · vivências e gift de fim de jornada.</p>
+        </div>
+      </article>
+
+      <article class="label-frame">
+        <div class="label-card dark-green" data-reveal>
+          <span class="label-brand"><img src="./assets/logos/oficial-branco.png" alt="ALL LIFE INSTITUTE"></span>
+          <span class="label-line"></span>
+          <h3 class="label-name">Banho de Calêndula</h3>
+          <span class="label-line"></span>
+          <p class="label-desc">Cuida da pele, fecha pequenas feridas, reconcilia o corpo com o próprio toque.</p>
+          <div class="label-foot">
+            <span>250 ml · 8.45 oz</span>
+            <a href="#">www.alllifeinstitute.com.br</a>
+          </div>
+        </div>
+        <div class="label-spec">
+          <span class="spec-eye">Spec · proposta dark green</span>
+          <p><b>Fundo</b> · Dark Green #585C3B. <b>Status</b> · arte a confirmar com Mari + Bruno. <b>Erva</b> · calêndula. <b>Aplicação prevista</b> · pós-procedimento estético + Saúde Estética Regenerativa.</p>
+        </div>
+      </article>
+
+    </div>
+
+    <div class="label-spec" style="max-width:none">
+      <span class="spec-eye">Curadoria das ervas</span>
+      <p><b>Mãe Lu (Lucilia Bernardes)</b> conduz a curadoria das ervas dos banhos. Definição final de combinações · camomila, lavanda, calêndula e arruda · em validação pelo time de hospitalidade junto da Mãe Lu. Aplicação amarrada às vivências mensais e à pós-consulta. Status · em produção, primeira veiculação prevista para o piloto da vivência.</p>
+    </div>
+  </section>
+
+  <!-- ─── LINHAS EM CONSTRUÇÃO ─── -->
+  <section class="linha">
+    <div class="linha-head">
+      <div>
+        <span class="linha-eye">Linhas 02 a 06 · em construção</span>
+        <h2 class="linha-name">As próximas linhas.</h2>
+      </div>
+      <p class="linha-desc">Linhas mapeadas no escopo da ALL LIFE Store que ainda não têm arte final, mas que entram no roadmap. Cada uma vai herdar o mesmo sistema visual · paleta, tipografia, gramática de rótulos.</p>
+    </div>
+
+    <div class="draft-grid">
+      <article class="draft-card">
+        <span class="draft-eye">Linha 02</span>
+        <h3 class="draft-name">Óleos terapêuticos.</h3>
+        <p class="draft-desc">Óleos vegetais e essenciais selecionados para aplicação no Instituto (massagens, terapia neural) e para venda. Suporte a sono, hormônios, dor crônica e ritual diário.</p>
+        <span class="draft-tag">A definir</span>
+      </article>
+
+      <article class="draft-card alt-tone">
+        <span class="draft-eye">Linha 03</span>
+        <h3 class="draft-name">Tinturas e elixires.</h3>
+        <p class="draft-desc">Tinturas alcoólicas de ervas e elixires florais. Curadoria com Mãe Lu. Distribuição interna para pacientes em jornada e via ALL LIFE Store.</p>
+        <span class="draft-tag">A definir</span>
+      </article>
+
+      <article class="draft-card alt-three">
+        <span class="draft-eye">Linha 04</span>
+        <h3 class="draft-name">Aromaterapia.</h3>
+        <p class="draft-desc">Sprays, brumas e roll-ons. Pensados para a sala de espera, para o lounge e para o paciente levar para casa. Vinculam ambiente do Instituto à rotina pessoal.</p>
+        <span class="draft-tag">A definir</span>
+      </article>
+
+      <article class="draft-card">
+        <span class="draft-eye">Linha 05</span>
+        <h3 class="draft-name">Gift Cards.</h3>
+        <p class="draft-desc">Gift Cards físicos com embalagem dedicada (DS · 18 CAIXA GIFT CARD). Já testados na campanha de Dia das Mães. Distribuição via comercial e B2B.</p>
+        <span class="draft-tag">Em uso pontual</span>
+      </article>
+
+      <article class="draft-card alt-tone">
+        <span class="draft-eye">Linha 06</span>
+        <h3 class="draft-name">Kits de retorno.</h3>
+        <p class="draft-desc">Kits físicos entregues após a primeira consulta ou após vivências. Combinam banhos, óleos e cartão de cuidado. Apertam o vínculo do paciente com o Instituto.</p>
+        <span class="draft-tag">A confeccionar</span>
+      </article>
+
+      <article class="draft-card alt-three">
+        <span class="draft-eye">Decisão pendente</span>
+        <h3 class="draft-name">Nome final da loja.</h3>
+        <p class="draft-desc">Apotheca, ALL LIFE Store ou outro. Decisão do Dr. Theo até 31/05. O nome ancora a arquitetura de produto e ditará o tom de toda a linha.</p>
+        <span class="draft-tag">Theo · até 31/05</span>
+      </article>
+    </div>
+  </section>
+
+  <!-- ─── DS · PALETA OFICIAL APLICADA ─── -->
+  <section class="linha">
+    <div class="linha-head">
+      <div>
+        <span class="linha-eye">Sistema visual · paleta oficial</span>
+        <h2 class="linha-name">As cores que as linhas herdam.</h2>
+      </div>
+      <p class="linha-desc">Toda linha aplica esta paleta. Fundos sólidos · texto preto sobre tons quentes, texto branco-papel sobre dark green. Variação cromática serve a famílias de produto e estados de uso.</p>
+    </div>
+
+    <div class="palette-grid">
+      <div class="swatch white">
+        <span>White Paper</span>
+        <span class="sw-hex">#F8F7F3</span>
+      </div>
+      <div class="swatch black">
+        <span>Black</span>
+        <span class="sw-hex">#1F1F1F</span>
+      </div>
+      <div class="swatch dark-green">
+        <span>Dark Green</span>
+        <span class="sw-hex">#585C3B</span>
+      </div>
+      <div class="swatch nature-green">
+        <span>Nature Green</span>
+        <span class="sw-hex">#899064</span>
+      </div>
+      <div class="swatch terracota">
+        <span>Terracota</span>
+        <span class="sw-hex">#B46A55</span>
+      </div>
+      <div class="swatch brown">
+        <span>Brown</span>
+        <span class="sw-hex">#BF9474</span>
+      </div>
+    </div>
+
+    <div class="label-spec" style="max-width:none;margin-top:24px">
+      <span class="spec-eye">Gramática do rótulo</span>
+      <p><b>Estrutura fixa</b> · logo horizontal no topo, primeira linha hairline, nome do produto em Monument Grotesk Heavy, segunda linha hairline, descrição em Simon Mono Light, rodapé com volume e URL. <b>Variação cromática</b> · só o fundo. <b>Hierarquia</b> · nome do produto domina, descrição apoia, marca emoldura. <b>Tipografia</b> · sem cursiva, sem itálico, sem efeito.</p>
+    </div>
+  </section>
+
+  <!-- ─── INTEGRAÇÃO COM O INSTITUTO ─── -->
+  <section class="linha">
+    <div class="linha-head">
+      <div>
+        <span class="linha-eye">Como as linhas conversam com o Instituto</span>
+        <h2 class="linha-name">Cada linha tem um lugar na jornada.</h2>
+      </div>
+      <p class="linha-desc">As linhas não são produto isolado. Cada uma se conecta a um momento clínico, terapêutico ou simbólico da jornada do paciente.</p>
+    </div>
+
+    <div class="draft-grid">
+      <article class="draft-card">
+        <span class="draft-eye">Momento</span>
+        <h3 class="draft-name">Pós-consulta inicial.</h3>
+        <p class="draft-desc">Kit de boas-vindas com banho, cartão e um ítem do dia. Marca o início da Jornada Integrada.</p>
+        <span class="draft-tag">Linhas 01 · 05 · 06</span>
+      </article>
+      <article class="draft-card alt-tone">
+        <span class="draft-eye">Momento</span>
+        <h3 class="draft-name">Vivência mensal.</h3>
+        <p class="draft-desc">Cada vivência distribui um banho temático e um óleo. Refrescam o vínculo entre encontros, levam o Instituto para casa.</p>
+        <span class="draft-tag">Linhas 01 · 02 · 04</span>
+      </article>
+      <article class="draft-card alt-three">
+        <span class="draft-eye">Momento</span>
+        <h3 class="draft-name">Fim de ciclo terapêutico.</h3>
+        <p class="draft-desc">Encerra a jornada com gift card e kit dedicado. Sinaliza fechamento sem encerrar o vínculo.</p>
+        <span class="draft-tag">Linhas 05 · 06</span>
+      </article>
+    </div>
+  </section>
+
+</main>
+
+<footer>
+  <span>ALL LIFE INSTITUTE · 2026</span>
+  <span>Anexo · Linhas · v0.1 · 2026-05-11</span>
+  <a href="./CATALOGO-DE-PRODUTOS-E-SERVICOS.html">← Voltar ao catálogo</a>
+</footer>
+
+<script>
+const labels=document.querySelectorAll('[data-reveal]');
+const io=new IntersectionObserver((entries)=>{
+  entries.forEach((e,i)=>{if(e.isIntersecting){
+    const idx=parseInt(e.target.dataset.idx||'0');
+    setTimeout(()=>e.target.classList.add('is-on'),idx*120);
+    io.unobserve(e.target);
+  }});
+},{threshold:.18,rootMargin:'0px 0px -60px 0px'});
+labels.forEach((el,i)=>{el.dataset.idx=String(i%4);io.observe(el)});
+</script>
+</body>
+</html>
