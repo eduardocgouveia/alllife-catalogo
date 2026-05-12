@@ -149,14 +149,9 @@
   .welcome-stat span{font-family:var(--f-mono);font-size:10.5px;letter-spacing:.18em;text-transform:uppercase;color:var(--text-faint)}
 
   /* ─── tela final (sucesso) ─── */
-  .final-box{padding:var(--s-12);background:var(--surface);border:1.5px solid var(--text);display:flex;flex-direction:column;gap:var(--s-6);max-width:680px}
-  .final-box h2{font-family:var(--f-display);font-weight:800;font-size:36px;letter-spacing:-.022em;line-height:1.04}
-  .final-box p{font-family:var(--f-body);font-size:15px;line-height:1.6;color:var(--text-dim);max-width:54ch}
-  .final-actions{display:flex;gap:var(--s-3);flex-wrap:wrap}
-  .btn-download{padding:16px 28px;background:var(--text);color:var(--white-paper);font-family:var(--f-mono);font-size:11px;font-weight:600;letter-spacing:.2em;text-transform:uppercase;display:inline-flex;align-items:center;gap:10px}
-  .btn-download:hover{background:var(--accent-strong)}
-  .btn-restart{padding:16px 22px;background:transparent;color:var(--text);border:1.5px solid var(--text);font-family:var(--f-mono);font-size:11px;font-weight:600;letter-spacing:.2em;text-transform:uppercase}
-  .btn-restart:hover{background:var(--text);color:var(--white-paper)}
+  .final-thanks{display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:var(--s-4);min-height:50vh;padding:var(--s-12) var(--s-6)}
+  .final-thanks .h-step{font-family:var(--f-display);font-weight:800;font-size:clamp(56px,8vw,108px);line-height:.98;letter-spacing:-.03em;color:var(--accent-strong);margin:0}
+  .final-thanks .step-help{font-family:var(--f-body);font-size:clamp(17px,1.6vw,22px);line-height:1.5;color:var(--text-dim);max-width:38ch;margin:0}
 
   /* ─── footer minimal ─── */
   footer.foot{padding:var(--s-5) var(--pad-x);border-top:1px solid var(--text);display:flex;justify-content:space-between;align-items:center;gap:var(--s-4);flex-wrap:wrap}
@@ -494,20 +489,9 @@
 
   <!-- 14 Sucesso -->
   <section class="step" data-step="final">
-    <div class="step-meta"><span class="num">Concluído</span><span class="cat">Recebido</span></div>
-    <h1 class="h-step">Enviado.</h1>
-    <p class="step-help">Suas respostas foram para a gestão clínica do Instituto via email. Sua ficha entra no Catálogo em até 48 horas. Guarde também a cópia local abaixo.</p>
-    <div class="step-content">
-      <div class="final-box">
-        <h2 id="finalNome">Pronto, profissional.</h2>
-        <p>Recebemos suas respostas + fotos por email. O arquivo <b id="finalFileName">ESPECIALISTA.html</b> abaixo é sua cópia local · útil pra arquivo pessoal ou para reenviar caso o email tenha falhado.</p>
-        <div class="final-actions">
-          <a class="btn-download" id="dlBtn" href="#" download>Baixar HTML ⤓</a>
-          <a class="btn-download" id="dlJson" href="#" download style="background:transparent;color:var(--text);border:1.5px solid var(--text)">Baixar JSON</a>
-          <button type="button" class="btn-restart" id="restartBtn">Preencher novamente</button>
-        </div>
-        <p style="font-size:13px;color:var(--text-faint)">Dúvidas? Fale com <b style="color:var(--accent-strong)">Eduardo · Atacama Digital</b> ou com <b style="color:var(--accent-strong)">Talita</b> na recepção do Instituto.</p>
-      </div>
+    <div class="final-thanks">
+      <h1 class="h-step">Obrigado.</h1>
+      <p class="step-help">Recebemos suas informações.</p>
     </div>
   </section>
 
@@ -546,6 +530,9 @@ function go(idx){
   progFill.style.width=pct+'%';
   progStep.textContent=String(current+1).padStart(2,'0');
   progPct.textContent=pct+'%';
+  // Esconde barra de progresso na tela final
+  const progressBar=document.querySelector('.progress');
+  if(progressBar)progressBar.style.display=(current===steps.length-1)?'none':'';
   window.scrollTo({top:0,behavior:'smooth'});
   // focus first input
   setTimeout(()=>{
@@ -653,63 +640,6 @@ dropZone.addEventListener('drop',e=>{e.preventDefault();handleFiles(e.dataTransf
 const dataEnvio=document.getElementById('dataEnvio');
 if(dataEnvio&&!dataEnvio.value){const d=new Date();dataEnvio.value=`${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}/${d.getFullYear()}`}
 
-// Generate submission document
-function buildJornadasList(data){
-  const map={j1:'01 Longevidade e Wellbeing',j2:'02 Hormonal e Climatério',j3:'03 Performance e Auto Desempenho',j4:'04 Recuperação Integral',j5:'05 Saúde Mental Integrada',j6:'06 Estética Regenerativa',j7:'07 Metabólica e Emagrecimento'};
-  return Object.entries(map).filter(([k])=>data[k]).map(([k,v])=>v);
-}
-function buildServicos(data){
-  const out=[];for(let i=1;i<=24;i++){if(data['svc_n_'+i]){out.push({nome:data['svc_n_'+i],desc:data['svc_d_'+i]||''})}}
-  return out;
-}
-function buildObjections(data){
-  const out=[];for(let i=1;i<=24;i++){if(data['obj_q_'+i]){out.push({pergunta:data['obj_q_'+i],resposta:data['obj_a_'+i]||''})}}
-  return out;
-}
-
-function buildSubmissionHTML(data,photos){
-  const j=buildJornadasList(data);
-  const sv=buildServicos(data);
-  const obj=buildObjections(data);
-  const photoBlocks=photos.map(p=>`<div style="display:inline-block;margin:8px;text-align:center"><img src="${p.dataUrl}" alt="${p.name}" style="max-width:240px;max-height:300px;object-fit:cover;border:1px solid #ccc"><div style="font-family:monospace;font-size:10px;color:#666;margin-top:4px">${p.name}</div></div>`).join('');
-  const row=(k,v)=>v?`<tr><td style="font-family:monospace;font-size:11px;text-transform:uppercase;letter-spacing:.16em;color:#666;padding:8px 12px 8px 0;vertical-align:top;width:30%">${k}</td><td style="padding:8px 0;color:#333">${v}</td></tr>`:'';
-  const list=(arr,fmt)=>arr.length?'<ul style="margin:0;padding:0;list-style:none">'+arr.map(fmt).join('')+'</ul>':'<i style="color:#999">pendente</i>';
-  const stamp=new Date().toLocaleString('pt-BR');
-  return `<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8"><title>ALL LIFE INSTITUTE · ${data.nome||'Especialista'}</title><style>body{font-family:Helvetica,Arial,sans-serif;background:#F8F7F3;color:#333;padding:48px 32px;max-width:820px;margin:0 auto;line-height:1.55}h1{font-size:42px;font-weight:800;letter-spacing:-.022em;margin-bottom:8px;line-height:1}h2{font-size:14px;font-weight:600;letter-spacing:.18em;text-transform:uppercase;color:#8C4E3F;margin-top:32px;margin-bottom:12px;padding-bottom:8px;border-bottom:1px solid #ddd}table{width:100%;border-collapse:collapse;font-size:14px}p{margin-bottom:8px}.meta{font-family:monospace;font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:#666;margin-bottom:32px;padding-bottom:16px;border-bottom:1px solid #333}.note{background:#FCFBF7;border-left:3px solid #8C4E3F;padding:14px 16px;font-size:13px;color:#525252;margin:16px 0}ul li{margin-bottom:8px;padding-left:14px;position:relative}ul li::before{content:"·";position:absolute;left:0;color:#8C4E3F;font-weight:800}@media print{body{padding:24px}}</style></head><body><div class="meta">All Life Institute · Ficha do Especialista · Gerada em ${stamp}</div><h1>${data.nome||'(sem nome)'}</h1><p style="font-style:italic;color:#666;margin-bottom:24px">${data.cargo||''}${data.categoria?' · '+data.categoria:''}</p>
-<h2>Redes sociais</h2><table>${row('Instagram',data.instagram)}${row('LinkedIn',data.linkedin)}${row('Site',data.site)}</table>
-<h2>Registros</h2><table>${row('Conselho',data.tipo_registro&&data.num_registro?data.tipo_registro+' '+data.num_registro:'')}${row('RQE',data.rqe)}</table>
-<h2>Formação</h2><table>${row('Graduação',data.graduacao)}${row('Conhecimentos',data.conhecimentos)}</table>
-<h2>Mini-bio</h2><p>${(data.bio||'(pendente)').replace(/\n/g,'<br>')}</p>
-<h2>Descrição das funções</h2><p>${(data.funcoes||'(pendente)').replace(/\n/g,'<br>')}</p>
-<h2>Serviços oferecidos</h2>${list(sv,s=>`<li><b>${s.nome}</b>${s.desc?' · '+s.desc:''}</li>`)}
-<h2>Jornadas onde atua</h2>${list(j,t=>`<li>${t}</li>`)}
-<h2>Operacional</h2><table>${row('Local',data.local)}${row('Dias',data.dias)}${row('Janela',data.janela)}${row('Salas',data.salas)}${row('Duração',data.duracao)}</table>
-<h2>Quebras de objeções</h2>${list(obj,o=>`<li><b>${o.pergunta}</b><br><i style="color:#525252">${o.resposta||'(sem resposta)'}</i></li>`)}
-<h2>Banco de fotos</h2><p><b>${photos.length}</b> foto(s) anexada(s) · status: <b>${data.foto_status||'sem resposta'}</b></p><div>${photoBlocks||'<i style="color:#999">Nenhuma foto anexada</i>'}</div>
-<h2>Assinatura</h2><table>${row('Preenchido por',data.quem)}${row('Data',data.data_envio)}</table>
-<div class="note"><b>Próximas etapas.</b> 1. A Atacama recebe e edita a forma. 2. Dr. Theo valida o conteúdo clínico. 3. Isadora revisa CFM e LGPD. 4. A ficha entra no Catálogo de Serviços e Produtos do Instituto.</div>
-</body></html>`;
-}
-
-// Prepara backup local · roda ANTES de enviar pro FormSubmit
-function prepareLocalBackup(){
-  const data=collectFormData();
-  const html=buildSubmissionHTML(data,photosData);
-  const json=JSON.stringify({data,photos:photosData.map(p=>({name:p.name,size:p.size,type:p.type})),enviado:new Date().toISOString()},null,2);
-  const nameSlug=(data.nome||'especialista').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'').slice(0,40);
-  const stamp=new Date().toISOString().slice(0,10);
-  const fname=`ESPECIALISTA-${nameSlug}-${stamp}.html`;
-  const jname=`ESPECIALISTA-${nameSlug}-${stamp}.json`;
-  const dlBtn=document.getElementById('dlBtn');
-  dlBtn.href='data:text/html;charset=utf-8,'+encodeURIComponent(html);
-  dlBtn.download=fname;
-  const dlJson=document.getElementById('dlJson');
-  dlJson.href='data:application/json;charset=utf-8,'+encodeURIComponent(json);
-  dlJson.download=jname;
-  document.getElementById('finalFileName').textContent=fname;
-  document.getElementById('finalNome').textContent=`Pronto, ${(data.apelido||data.nome||'profissional').split(' ')[0]}.`;
-}
-
 // FormSubmit · envio real para email + monitorar iframe
 let submitting=false;
 const quizForm=document.getElementById('quizForm');
@@ -789,13 +719,12 @@ function updateSubject(){
 
 quizForm.addEventListener('submit',(e)=>{
   // Não usar preventDefault · queremos a submissão nativa do form pro iframe
-  prepareLocalBackup();
   updateSubject();     // título do email com o nome do profissional
   relabelAllFields();  // campos viram perguntas legíveis no corpo do email
   submitting=true;
   if(submitBtn){
     submitBtn.disabled=true;
-    submitBtn.textContent='Enviando ao Instituto...';
+    submitBtn.textContent='Enviando...';
     submitBtn.style.opacity='.7';
   }
 });
@@ -812,14 +741,6 @@ submitFrame.addEventListener('load',()=>{
   }
   // Limpa o rascunho local pra não confundir num próximo preenchimento
   setTimeout(()=>{try{localStorage.removeItem(STORAGE_KEY)}catch(_){}},500);
-});
-
-// Restart
-document.getElementById('restartBtn').addEventListener('click',()=>{
-  if(!confirm('Apagar o rascunho e começar de novo?'))return;
-  localStorage.removeItem(STORAGE_KEY);
-  document.querySelectorAll('input,textarea').forEach(el=>{if(el.type==='checkbox'||el.type==='radio')el.checked=false;else el.value=''});
-  photosData=[];renderPhotos();go(0);
 });
 
 // Init
