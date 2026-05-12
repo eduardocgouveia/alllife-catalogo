@@ -153,6 +153,13 @@
   .final-thanks .h-step{font-family:var(--f-display);font-weight:800;font-size:clamp(56px,8vw,108px);line-height:.98;letter-spacing:-.03em;color:var(--accent-strong);margin:0}
   .final-thanks .step-help{font-family:var(--f-body);font-size:clamp(17px,1.6vw,22px);line-height:1.5;color:var(--text-dim);max-width:38ch;margin:0}
 
+  /* Erro de submissão · aparece no step 13 quando fetch falha */
+  .submit-error{margin-top:var(--s-6);padding:var(--s-5) var(--s-6);background:#FCEBE7;border:1px solid var(--accent-strong);border-left:4px solid var(--accent-strong);display:flex;flex-direction:column;gap:6px}
+  .submit-error-eye{font-family:var(--f-mono);font-size:10.5px;font-weight:700;letter-spacing:.22em;text-transform:uppercase;color:var(--accent-strong)}
+  .submit-error-msg{font-family:var(--f-body);font-size:15px;line-height:1.55;color:var(--text);font-weight:500;margin:0}
+  .submit-error-help{font-family:var(--f-body);font-size:13px;line-height:1.5;color:var(--text-dim);margin:0}
+  .submit-error-help a{color:var(--accent-strong);text-decoration:underline}
+
   /* ─── footer minimal ─── */
   footer.foot{padding:var(--s-5) var(--pad-x);border-top:1px solid var(--text);display:flex;justify-content:space-between;align-items:center;gap:var(--s-4);flex-wrap:wrap}
   footer.foot span{font-family:var(--f-mono);font-size:11px;font-weight:500;letter-spacing:.18em;text-transform:uppercase;color:var(--text-faint)}
@@ -181,7 +188,6 @@
       method="POST"
       action="https://formsubmit.co/eduardo@agenciaatacama.com.br"
       enctype="multipart/form-data"
-      target="submitFrame"
       autocomplete="off"
       novalidate>
 
@@ -474,11 +480,16 @@
   <section class="step" data-step="13">
     <div class="step-meta"><span class="num">13 / 13</span><span class="cat">Finalizar</span></div>
     <h1 class="h-step">Tudo certo. Vamos enviar pro Instituto.</h1>
-    <p class="step-help">Ao clicar em <b>Enviar</b>, suas respostas chegam direto no email da Atacama, com as fotos anexadas em alta resolução. Você também ganha uma cópia local em HTML.</p>
+    <p class="step-help">Ao clicar em <b>Enviar</b>, suas respostas chegam direto no email da Atacama, com as fotos anexadas em alta resolução.</p>
     <div class="step-content">
       <div class="field-grid">
         <div class="field"><label>Confirme seu nome</label><input type="text" name="quem" placeholder="Para registrar quem preencheu"></div>
         <div class="field"><label>Data</label><input type="text" name="data_envio" id="dataEnvio" placeholder="DD/MM/AAAA"></div>
+      </div>
+      <div class="submit-error" id="submitError" hidden>
+        <span class="submit-error-eye">Não enviou.</span>
+        <p class="submit-error-msg" id="submitErrorMsg">Tivemos um problema na conexão. Tente novamente · seus dados estão salvos.</p>
+        <p class="submit-error-help">Se persistir, copie o <a href="#" id="showLogBtn">log de tentativas</a> e envie pro Eduardo.</p>
       </div>
     </div>
     <div class="actions">
@@ -498,8 +509,6 @@
 </main>
 
 </form>
-
-<iframe name="submitFrame" id="submitFrame" style="position:absolute;width:0;height:0;border:0;visibility:hidden" aria-hidden="true" title="Submit target"></iframe>
 
 <footer class="foot">
   <span>ALL LIFE INSTITUTE · 2026</span>
@@ -640,11 +649,15 @@ dropZone.addEventListener('drop',e=>{e.preventDefault();handleFiles(e.dataTransf
 const dataEnvio=document.getElementById('dataEnvio');
 if(dataEnvio&&!dataEnvio.value){const d=new Date();dataEnvio.value=`${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}/${d.getFullYear()}`}
 
-// FormSubmit · envio real para email + monitorar iframe
+// ─── Submit · fetch + audit log + retry ───────────────────────────────
 let submitting=false;
 const quizForm=document.getElementById('quizForm');
-const submitFrame=document.getElementById('submitFrame');
 const submitBtn=document.getElementById('submitBtn');
+const submitError=document.getElementById('submitError');
+const submitErrorMsg=document.getElementById('submitErrorMsg');
+const AUDIT_LOG_URL='https://alllifeinstitute.atacama.digital/api/log';
+const LOG_KEY='ali_form_log';
+const FORM_VERSION='v1.2';
 
 // Mapa nome técnico → pergunta legível (com prefixo numérico = ordem alfabética = ordem do form)
 const FIELD_LABELS={
@@ -717,30 +730,121 @@ function updateSubject(){
   if(subjectEl)subjectEl.value=`Novo cadastro · ${nome} · Catálogo ALL LIFE INSTITUTE`;
 }
 
-quizForm.addEventListener('submit',(e)=>{
-  // Não usar preventDefault · queremos a submissão nativa do form pro iframe
-  updateSubject();     // título do email com o nome do profissional
-  relabelAllFields();  // campos viram perguntas legíveis no corpo do email
-  submitting=true;
-  if(submitBtn){
-    submitBtn.disabled=true;
-    submitBtn.textContent='Enviando...';
-    submitBtn.style.opacity='.7';
+function getPhotoMeta(){
+  const fi=document.getElementById('photoInput');
+  if(!fi||!fi.files)return{files:[],totalSize:0};
+  const files=Array.from(fi.files).map(f=>({name:f.name,size:f.size,type:f.type}));
+  const totalSize=files.reduce((a,f)=>a+f.size,0);
+  return{files,totalSize};
+}
+
+function pushLocalLog(entry){
+  try{
+    const log=JSON.parse(localStorage.getItem(LOG_KEY)||'[]');
+    log.push(entry);
+    while(log.length>50)log.shift();
+    localStorage.setItem(LOG_KEY,JSON.stringify(log));
+  }catch(_){}
+}
+
+function auditLog(stage,status,extra){
+  const data=collectFormData();
+  const{files,totalSize}=getPhotoMeta();
+  const entry={
+    stage,        // 'intent' (clicou enviar) | 'result' (depois do fetch)
+    status,       // 'starting' | 'success' | 'fail'
+    error:extra?.error||'',
+    data,
+    files,
+    totalSize,
+    formVersion:FORM_VERSION,
+    clientTs:new Date().toISOString(),
+    origin:location.origin+location.pathname,
+    userAgent:navigator.userAgent
+  };
+  pushLocalLog(entry);
+  // Beacon · fire-and-forget · sobrevive até refresh/close do tab
+  try{
+    const blob=new Blob([JSON.stringify(entry)],{type:'application/json'});
+    if(!navigator.sendBeacon(AUDIT_LOG_URL,blob)){
+      // Fallback fetch
+      fetch(AUDIT_LOG_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(entry),keepalive:true}).catch(()=>{});
+    }
+  }catch(_){
+    fetch(AUDIT_LOG_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(entry),keepalive:true}).catch(()=>{});
   }
+}
+
+function showError(msg){
+  if(submitErrorMsg)submitErrorMsg.textContent=msg;
+  if(submitError)submitError.hidden=false;
+  submitError?.scrollIntoView({behavior:'smooth',block:'center'});
+}
+
+function hideError(){
+  if(submitError)submitError.hidden=true;
+}
+
+async function realSubmit(){
+  hideError();
+  // 1. pré-check tamanho
+  const{totalSize}=getPhotoMeta();
+  const MAX_BYTES=9.5*1024*1024;
+  if(totalSize>MAX_BYTES){
+    auditLog('intent','fail',{error:`oversize ${(totalSize/1024/1024).toFixed(1)}MB`});
+    showError(`Suas fotos somam ${(totalSize/1024/1024).toFixed(1)} MB · o limite é 10 MB. Reduza ou envie em outro canal.`);
+    return;
+  }
+  // 2. log de intenção · ANTES do envio
+  auditLog('intent','starting');
+  // 3. prepara form
+  updateSubject();
+  relabelAllFields();
+  // 4. estado UI
+  submitting=true;
+  if(submitBtn){submitBtn.disabled=true;submitBtn.textContent='Enviando...';submitBtn.style.opacity='.7'}
+  // 5. envio com timeout
+  const controller=new AbortController();
+  const timer=setTimeout(()=>controller.abort(),90000);
+  let okFetch=false,errMsg='';
+  try{
+    const fd=new FormData(quizForm);
+    await fetch(quizForm.action,{method:'POST',body:fd,mode:'no-cors',signal:controller.signal});
+    okFetch=true;
+  }catch(err){
+    errMsg=err?.name==='AbortError'?'timeout 90s':err?.message||'erro de rede';
+  }finally{
+    clearTimeout(timer);
+    submitting=false;
+    if(submitBtn){submitBtn.disabled=false;submitBtn.textContent='Enviar para o Instituto →';submitBtn.style.opacity='1'}
+  }
+  // 6. log de resultado
+  auditLog('result',okFetch?'success':'fail',{error:errMsg});
+  if(okFetch){
+    go(steps.length-1);
+    setTimeout(()=>{try{localStorage.removeItem(STORAGE_KEY)}catch(_){}},500);
+  }else{
+    showError(`Não conseguimos enviar: ${errMsg}. Tente novamente · seus dados estão salvos.`);
+  }
+}
+
+quizForm.addEventListener('submit',(e)=>{
+  e.preventDefault();
+  realSubmit();
 });
 
-submitFrame.addEventListener('load',()=>{
-  if(!submitting)return; // ignora o load inicial do iframe vazio
-  submitting=false;
-  // FormSubmit processou · vamos pra tela de sucesso
-  go(steps.length-1);
-  if(submitBtn){
-    submitBtn.disabled=false;
-    submitBtn.textContent='Enviar para o Instituto →';
-    submitBtn.style.opacity='1';
-  }
-  // Limpa o rascunho local pra não confundir num próximo preenchimento
-  setTimeout(()=>{try{localStorage.removeItem(STORAGE_KEY)}catch(_){}},500);
+// Botão "log de tentativas" · mostra histórico local em modal nativo
+document.getElementById('showLogBtn')?.addEventListener('click',(e)=>{
+  e.preventDefault();
+  let log=[];
+  try{log=JSON.parse(localStorage.getItem(LOG_KEY)||'[]')}catch(_){}
+  const txt=log.length?JSON.stringify(log,null,2):'(nenhum registro local)';
+  // Copia pro clipboard se possível
+  navigator.clipboard?.writeText(txt).then(()=>{
+    alert(`Log copiado pro clipboard · ${log.length} registro(s). Cole no email pro Eduardo.`);
+  }).catch(()=>{
+    prompt('Copie esse log e envie pro Eduardo:',txt.slice(0,2000));
+  });
 });
 
 // Init
