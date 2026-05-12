@@ -125,6 +125,7 @@
   .photo-card{aspect-ratio:4/5;position:relative;overflow:hidden;background:var(--surface-3)}
   .photo-card img{width:100%;height:100%;object-fit:cover}
   .photo-card .photo-name{position:absolute;left:0;right:0;bottom:0;padding:6px 8px;font-family:var(--f-mono);font-size:9.5px;letter-spacing:.1em;color:var(--white-paper);background:rgba(51,51,51,.7);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .photo-card .photo-comp{position:absolute;top:6px;left:6px;padding:3px 7px;font-family:var(--f-mono);font-size:9px;font-weight:600;letter-spacing:.08em;color:var(--white-paper);background:rgba(140,78,63,.92);border-radius:2px}
   .photo-card .remove{position:absolute;top:6px;right:6px;width:24px;height:24px;background:rgba(51,51,51,.85);color:var(--white-paper);display:flex;align-items:center;justify-content:center;font-size:14px;line-height:1;border-radius:50%}
 
   /* ─── ações ─── */
@@ -459,7 +460,7 @@
       <div class="upload">
         <label class="drop-zone" id="dropZone">
           <span class="drop-zone-title">Solte fotos aqui</span>
-          <span class="drop-zone-hint">ou clique para selecionar · JPG, PNG · até 5 MB cada</span>
+          <span class="drop-zone-hint">ou clique para selecionar · JPG, PNG · qualquer tamanho · comprimimos automaticamente</span>
           <input type="file" id="photoInput" name="foto" accept="image/*" multiple>
         </label>
         <div class="photo-grid" id="photoGrid"></div>
@@ -596,7 +597,9 @@ function collectFormData(){
   return data;
 }
 function saveDraft(){
-  try{localStorage.setItem(STORAGE_KEY,JSON.stringify({data:collectFormData(),photos:photosData,ts:Date.now()}));
+  // Exclui o File obj (não-serializável). Preview e metadados ficam.
+  const photosToSave=photosData.map(p=>({name:p.name,size:p.size,type:p.type,originalName:p.originalName,originalSize:p.originalSize,dataUrl:p.dataUrl}));
+  try{localStorage.setItem(STORAGE_KEY,JSON.stringify({data:collectFormData(),photos:photosToSave,ts:Date.now()}));
     savedTag.textContent='Rascunho salvo · '+new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
   }catch(e){console.warn('localStorage failed',e)}
 }
@@ -625,19 +628,62 @@ const photoGrid=document.getElementById('photoGrid');
 
 function fileToDataURL(file){return new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(r.result);r.onerror=rej;r.readAsDataURL(file)})}
 
+// Compressão automática · evita rejeição por tamanho no FormSubmit (~10MB total)
+async function compressImage(file,maxDim=1800,quality=.85){
+  if(!file.type.startsWith('image/'))return file;
+  if(file.size<1.2*1024*1024)return file; // < 1.2MB já é ok
+  return new Promise((resolve)=>{
+    const img=new Image();
+    const url=URL.createObjectURL(file);
+    img.onload=()=>{
+      URL.revokeObjectURL(url);
+      const scale=Math.min(1,maxDim/Math.max(img.width,img.height));
+      const w=Math.round(img.width*scale);
+      const h=Math.round(img.height*scale);
+      const canvas=document.createElement('canvas');
+      canvas.width=w;canvas.height=h;
+      const ctx=canvas.getContext('2d');
+      ctx.drawImage(img,0,0,w,h);
+      canvas.toBlob((blob)=>{
+        if(!blob)return resolve(file);
+        const newName=file.name.replace(/\.[^.]+$/,'')+'.jpg';
+        resolve(new File([blob],newName,{type:'image/jpeg'}));
+      },'image/jpeg',quality);
+    };
+    img.onerror=()=>resolve(file);
+    img.src=url;
+  });
+}
+
+// Sincroniza fotos comprimidas com o <input type=file> · o FormData(form) pega elas
+function syncPhotoInput(){
+  try{
+    const dt=new DataTransfer();
+    photosData.forEach(p=>{if(p.file)dt.items.add(p.file)});
+    photoInput.files=dt.files;
+  }catch(_){/* DataTransfer não suportado · navegador antigo */}
+}
+
 async function handleFiles(files){
   for(const f of files){
     if(!f.type.startsWith('image/'))continue;
-    if(f.size>5*1024*1024){alert(`${f.name} excede 5 MB · pule essa.`);continue}
-    const dataUrl=await fileToDataURL(f);
-    photosData.push({name:f.name,size:f.size,type:f.type,dataUrl});
+    const compressed=await compressImage(f);
+    const dataUrl=await fileToDataURL(compressed);
+    photosData.push({
+      name:compressed.name,size:compressed.size,type:compressed.type,
+      originalName:f.name,originalSize:f.size,dataUrl,file:compressed
+    });
   }
+  syncPhotoInput();
   renderPhotos();saveDraft();
 }
 function renderPhotos(){
-  photoGrid.innerHTML=photosData.map((p,i)=>`<div class="photo-card"><img src="${p.dataUrl}" alt="${p.name}"><button class="remove" data-i="${i}" type="button" aria-label="Remover">×</button><span class="photo-name">${p.name}</span></div>`).join('');
+  photoGrid.innerHTML=photosData.map((p,i)=>{
+    const compInfo=p.originalSize&&p.originalSize>p.size?`<span class="photo-comp">${(p.originalSize/1024/1024).toFixed(1)} → ${(p.size/1024/1024).toFixed(1)} MB</span>`:`<span class="photo-comp">${(p.size/1024/1024).toFixed(1)} MB</span>`;
+    return `<div class="photo-card"><img src="${p.dataUrl}" alt="${p.name}"><button class="remove" data-i="${i}" type="button" aria-label="Remover">×</button><span class="photo-name">${p.originalName||p.name}</span>${compInfo}</div>`;
+  }).join('');
   photoGrid.querySelectorAll('.remove').forEach(b=>b.addEventListener('click',e=>{
-    const i=parseInt(b.dataset.i);photosData.splice(i,1);renderPhotos();saveDraft();
+    const i=parseInt(b.dataset.i);photosData.splice(i,1);syncPhotoInput();renderPhotos();saveDraft();
   }));
 }
 photoInput.addEventListener('change',e=>handleFiles(e.target.files));
