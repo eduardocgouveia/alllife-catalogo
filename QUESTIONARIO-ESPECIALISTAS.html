@@ -703,7 +703,7 @@ const submitError=document.getElementById('submitError');
 const submitErrorMsg=document.getElementById('submitErrorMsg');
 const AUDIT_LOG_URL='https://alllifeinstitute.atacama.digital/api/log';
 const LOG_KEY='ali_form_log';
-const FORM_VERSION='v1.2';
+const FORM_VERSION='v1.3';
 
 // Mapa nome técnico → pergunta legível (com prefixo numérico = ordem alfabética = ordem do form)
 const FIELD_LABELS={
@@ -833,44 +833,46 @@ function hideError(){
 
 async function realSubmit(){
   hideError();
-  // 1. pré-check tamanho
-  const{totalSize}=getPhotoMeta();
-  const MAX_BYTES=9.5*1024*1024;
+  // 0. LOG DE INTENÇÃO · primeiríssima coisa · try interno robusto
+  try{auditLog('intent','starting')}catch(e){console.warn('auditLog intent error:',e)}
+  // 1. pré-check tamanho · 12MB com compressão já aplicada
+  let totalSize=0;
+  try{({totalSize}=getPhotoMeta())}catch(_){}
+  const MAX_BYTES=12*1024*1024;
   if(totalSize>MAX_BYTES){
-    auditLog('intent','fail',{error:`oversize ${(totalSize/1024/1024).toFixed(1)}MB`});
-    showError(`Suas fotos somam ${(totalSize/1024/1024).toFixed(1)} MB · o limite é 10 MB. Reduza ou envie em outro canal.`);
+    try{auditLog('result','fail',{error:`oversize ${(totalSize/1024/1024).toFixed(1)}MB`})}catch(_){}
+    showError(`Suas fotos somam ${(totalSize/1024/1024).toFixed(1)} MB · acima do limite. Reduza fotos ou tente sem foto.`);
     return;
   }
-  // 2. log de intenção · ANTES do envio
-  auditLog('intent','starting');
-  // 3. prepara form
-  updateSubject();
-  relabelAllFields();
-  // 4. estado UI
+  // 2. prepara form (rename + subject)
+  try{updateSubject()}catch(e){console.warn('updateSubject error:',e)}
+  try{relabelAllFields()}catch(e){console.warn('relabelAllFields error:',e)}
+  // 3. estado UI
   submitting=true;
   if(submitBtn){submitBtn.disabled=true;submitBtn.textContent='Enviando...';submitBtn.style.opacity='.7'}
-  // 5. envio com timeout
+  // 4. envio com timeout
   const controller=new AbortController();
   const timer=setTimeout(()=>controller.abort(),90000);
-  let okFetch=false,errMsg='';
+  let okFetch=false,errMsg='',errName='';
   try{
     const fd=new FormData(quizForm);
     await fetch(quizForm.action,{method:'POST',body:fd,mode:'no-cors',signal:controller.signal});
     okFetch=true;
   }catch(err){
-    errMsg=err?.name==='AbortError'?'timeout 90s':err?.message||'erro de rede';
+    errName=err?.name||'';
+    errMsg=errName==='AbortError'?'timeout 90s':err?.message||'erro de rede';
   }finally{
     clearTimeout(timer);
     submitting=false;
     if(submitBtn){submitBtn.disabled=false;submitBtn.textContent='Enviar para o Instituto →';submitBtn.style.opacity='1'}
   }
-  // 6. log de resultado
-  auditLog('result',okFetch?'success':'fail',{error:errMsg});
+  // 5. log de resultado
+  try{auditLog('result',okFetch?'success':'fail',{error:errMsg,errName})}catch(_){}
   if(okFetch){
     go(steps.length-1);
     setTimeout(()=>{try{localStorage.removeItem(STORAGE_KEY)}catch(_){}},500);
   }else{
-    showError(`Não conseguimos enviar: ${errMsg}. Tente novamente · seus dados estão salvos.`);
+    showError(`Não conseguimos enviar · ${errMsg}. Tente novamente · seus dados estão salvos.`);
   }
 }
 
