@@ -703,7 +703,10 @@ const submitError=document.getElementById('submitError');
 const submitErrorMsg=document.getElementById('submitErrorMsg');
 const AUDIT_LOG_URL='https://alllifeinstitute.atacama.digital/api/log';
 const LOG_KEY='ali_form_log';
-const FORM_VERSION='v1.3';
+const FORM_VERSION='v1.4';
+// Session ID único por aba/preenchimento · cross-event tracking no audit log
+const SESSION_ID=(()=>{try{return crypto.randomUUID().slice(0,8)}catch(_){return Math.random().toString(36).slice(2,10)}})();
+const SESSION_START_TS=Date.now();
 
 // Mapa nome técnico → pergunta legível (com prefixo numérico = ordem alfabética = ordem do form)
 const FIELD_LABELS={
@@ -797,8 +800,12 @@ function auditLog(stage,status,extra){
   const data=collectFormData();
   const{files,totalSize}=getPhotoMeta();
   const entry={
-    stage,        // 'intent' (clicou enviar) | 'result' (depois do fetch)
-    status,       // 'starting' | 'success' | 'fail'
+    sessionId:SESSION_ID,
+    sessionStartTs:new Date(SESSION_START_TS).toISOString(),
+    elapsedMs:Date.now()-SESSION_START_TS,
+    stage,        // 'start' | 'step' | 'inactive' | 'abandon' | 'intent' | 'result'
+    status,       // 'starting' | 'success' | 'fail' | 'view' | 'tab-close' | 'idle-60s'
+    step:current,
     error:extra?.error||'',
     data,
     files,
@@ -806,7 +813,8 @@ function auditLog(stage,status,extra){
     formVersion:FORM_VERSION,
     clientTs:new Date().toISOString(),
     origin:location.origin+location.pathname,
-    userAgent:navigator.userAgent
+    userAgent:navigator.userAgent,
+    ...(extra||{})
   };
   pushLocalLog(entry);
   // Beacon · fire-and-forget · sobrevive até refresh/close do tab
@@ -894,6 +902,42 @@ document.getElementById('showLogBtn')?.addEventListener('click',(e)=>{
     prompt('Copie esse log e envie pro Eduardo:',txt.slice(0,2000));
   });
 });
+
+// ─── Session tracking · sabe quem começou, parou, voltou ───
+let lastStepLogged=-1;
+function logStepView(){
+  if(current===lastStepLogged)return;
+  lastStepLogged=current;
+  try{auditLog('step','view')}catch(_){}
+}
+
+// Inatividade · 60s sem input gera log "idle"
+let idleTimer;
+function resetIdleTimer(){
+  clearTimeout(idleTimer);
+  idleTimer=setTimeout(()=>{try{auditLog('inactive','idle-60s')}catch(_){}},60000);
+}
+document.addEventListener('input',resetIdleTimer);
+document.addEventListener('click',resetIdleTimer);
+resetIdleTimer();
+
+// Tab close / visibilidade · captura o abandono ANTES da página descarregar
+let abandonLogged=false;
+function logAbandon(){
+  if(abandonLogged)return;
+  abandonLogged=true;
+  try{auditLog('abandon','tab-close')}catch(_){}
+}
+window.addEventListener('pagehide',logAbandon);
+window.addEventListener('beforeunload',logAbandon);
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden')logAbandon()});
+
+// Wrap go() pra trackear cada step view
+const _origGo=go;
+go=function(idx){_origGo(idx);logStepView()};
+
+// Log de início da sessão
+try{auditLog('start','session-open')}catch(_){}
 
 // Init
 loadDraft();
