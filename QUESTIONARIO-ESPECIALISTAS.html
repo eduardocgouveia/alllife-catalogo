@@ -156,6 +156,8 @@
 
   /* Erro de submissão · aparece no step 13 quando fetch falha */
   .submit-error{margin-top:var(--s-6);padding:var(--s-5) var(--s-6);background:#FCEBE7;border:1px solid var(--accent-strong);border-left:4px solid var(--accent-strong);display:flex;flex-direction:column;gap:6px}
+  .submit-error[hidden]{display:none!important}
+  [hidden]{display:none!important}
   .submit-error-eye{font-family:var(--f-mono);font-size:10.5px;font-weight:700;letter-spacing:.22em;text-transform:uppercase;color:var(--accent-strong)}
   .submit-error-msg{font-family:var(--f-body);font-size:15px;line-height:1.55;color:var(--text);font-weight:500;margin:0}
   .submit-error-help{font-family:var(--f-body);font-size:13px;line-height:1.5;color:var(--text-dim);margin:0}
@@ -703,7 +705,7 @@ const submitError=document.getElementById('submitError');
 const submitErrorMsg=document.getElementById('submitErrorMsg');
 const AUDIT_LOG_URL='https://alllifeinstitute.atacama.digital/api/log';
 const LOG_KEY='ali_form_log';
-const FORM_VERSION='v1.5';
+const FORM_VERSION='v1.6';
 // Session ID único por aba/preenchimento · cross-event tracking no audit log
 const SESSION_ID=(()=>{try{return crypto.randomUUID().slice(0,8)}catch(_){return Math.random().toString(36).slice(2,10)}})();
 const SESSION_START_TS=Date.now();
