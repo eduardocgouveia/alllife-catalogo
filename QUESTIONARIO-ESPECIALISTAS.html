@@ -703,7 +703,7 @@ const submitError=document.getElementById('submitError');
 const submitErrorMsg=document.getElementById('submitErrorMsg');
 const AUDIT_LOG_URL='https://alllifeinstitute.atacama.digital/api/log';
 const LOG_KEY='ali_form_log';
-const FORM_VERSION='v1.4';
+const FORM_VERSION='v1.5';
 // Session ID único por aba/preenchimento · cross-event tracking no audit log
 const SESSION_ID=(()=>{try{return crypto.randomUUID().slice(0,8)}catch(_){return Math.random().toString(36).slice(2,10)}})();
 const SESSION_START_TS=Date.now();
@@ -884,8 +884,17 @@ async function realSubmit(){
   }
 }
 
+// Caminho 1 · submit event do form (botão type=submit · Enter no campo)
 quizForm.addEventListener('submit',(e)=>{
   e.preventDefault();
+  if(submitting)return;
+  realSubmit();
+});
+// Caminho 2 · click direto no botão · FALLBACK que sobrevive a navegadores/OS antigos
+// onde o submit event do form pode não disparar (Catalina + Chrome 146 reportado em 14/05)
+submitBtn?.addEventListener('click',(e)=>{
+  e.preventDefault();
+  if(submitting)return;
   realSubmit();
 });
 
