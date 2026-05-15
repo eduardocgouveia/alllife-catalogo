@@ -4,7 +4,7 @@
 
 set -e
 
-SRC="/Users/eduardogouveia/Documents/ATACAMA DIGITAL/05-CLIENTES/All-Life-Institute/04-ENTREGAVEL/CATALOGO-DE-PRODUTOS-E-SERVICOS/2026-05-11"
+SRC="/Users/eduardogouveia/Documents/ATACAMA DIGITAL/05-CLIENTES/All-Life-Institute/04-ENTREGAVEL/CATALOGO-PRODUTOS-SERVICOS_2026-05-11/2026-05-11"
 DST="$(cd "$(dirname "$0")" && pwd)"
 MSG="${1:-chore: sync from entregavel}"
 
